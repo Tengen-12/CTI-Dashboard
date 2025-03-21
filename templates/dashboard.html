@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Threat Intelligence Dashboard</title>
+    <!-- Load Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Load jQuery for AJAX requests -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* Default Theme (Light Mode) */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #ffffff;
+            color: #000000;
+        }
+        h1, h2 {
+            color: #000000;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+            background-color: #f9f9f9;
+            color: #000000;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th {
+            background-color: #e0e0e0;
+            color: #000000;
+        }
+        td {
+            background-color: #ffffff;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        .filter-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+        }
+        .filter-section input, .filter-section button {
+            margin-right: 10px;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+        }
+        .filter-section input {
+            background-color: #ffffff;
+            color: #000000;
+        }
+        .filter-section button {
+            background-color: #007bff;
+            color: #ffffff;
+            cursor: pointer;
+        }
+        .filter-section button:hover {
+            background-color: #0056b3;
+        }
+        canvas {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        iframe {
+            border: none;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .dashboard-section {
+            margin-bottom: 20px; /* Reduced margin for compact layout */
+        }
+        .dashboard-section h2 {
+            font-size: 1.5em; /* Adjusted font size for smaller sections */
+        }
+        .card {
+            display: inline-block;
+            width: 48%; /* Adjusted width for better alignment */
+            margin-right: 2%; /* Increased margin for spacing */
+            vertical-align: top;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .card:last-child {
+            margin-right: 0;
+        }
+        #threatTable tbody tr:nth-child(odd) {
+            background-color: #f0f0f0; /* Alternating row color */
+        }
+        #threatTable tbody tr:hover {
+            background-color: #e0e0e0; /* Highlight row on hover */
+            cursor: pointer;
+        }
+        #threatTable th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        #threatTable {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 10px; /* Reduced margin for compact layout */
+        }
+        .real-time-section {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .real-time-section h2 {
+            margin-bottom: 15px;
+        }
+        #threatChart {
+            height: 60px; /* Reduced height for smaller chart */
+        }
+        .dashboard-section.flex-container {
+            display: flex; /* Use flexbox for side-by-side layout */
+            gap: 2%; /* Add spacing between cards */
+        }
+        .card {
+            flex: 1; /* Ensure cards take equal width */
+        }
+        /* Dark Mode */
+        body.dark-mode {
+            background-color: #181818;
+            color: #f5f5f5;
+        }
+        body.dark-mode h1, body.dark-mode h2 {
+            color: #ffffff;
+        }
+        body.dark-mode table {
+            background-color: #242424;
+            color: #f5f5f5;
+        }
+        body.dark-mode table, body.dark-mode th, body.dark-mode td {
+            border: 1px solid #444;
+        }
+        body.dark-mode th {
+            background-color: #333;
+            color: #ffffff;
+        }
+        body.dark-mode td {
+            background-color: #242424;
+        }
+        body.dark-mode .filter-section {
+            background-color: #242424;
+        }
+        body.dark-mode .filter-section input {
+            background-color: #333;
+            color: #f5f5f5;
+        }
+        body.dark-mode .filter-section button {
+            background-color: #007bff;
+            color: #ffffff;
+        }
+        body.dark-mode canvas {
+            background-color: #242424;
+        }
+        body.dark-mode .card {
+            background-color: #242424;
+        }
+        body.dark-mode .real-time-section {
+            background-color: #242424;
+        }
+        /* Theme Toggle Slider */
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .theme-toggle input[type="checkbox"] {
+            width: 40px;
+            height: 20px;
+            appearance: none;
+            background-color: #ccc;
+            border-radius: 10px;
+            position: relative;
+            outline: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .theme-toggle input[type="checkbox"]:checked {
+            background-color: #007bff;
+        }
+        .theme-toggle input[type="checkbox"]::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            top: 1px;
+            left: 1px;
+            transition: transform 0.3s;
+        }
+        .theme-toggle input[type="checkbox"]:checked::before {
+            transform: translateX(20px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Toggle Slider -->
+    <div class="theme-toggle">
+        <label for="themeSwitch">🌙/☀️</label>
+        <input type="checkbox" id="themeSwitch">
+    </div>
+
+    <h1>Cyber Threat Intelligence Dashboard</h1>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <h2>Filter Threat Data</h2>
+        <label for="start_date">Start Date:</label>
+        <input type="date" id="start_date">
+        <label for="end_date">End Date:</label>
+        <input type="date" id="end_date">
+        <button id="applyFilters">Apply Filters</button>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="dashboard-section">
+        <h2>Threat Overview</h2>
+        <canvas id="threatChart" width="200" height="60"></canvas>
+    </div>
+
+    <!-- Power BI and Tableau Embedded Dashboards -->
+    <div class="dashboard-section flex-container">
+        <div class="card">
+            <h2>Power BI Dashboard</h2>
+            <iframe width="100%" height="400" src="https://app.powerbi.com/view?r=eyJrIjoiZDdmY2I2ODAtMzNkYi00YmE2LTKr6EeffXNDX9kzYZyr5KsyfSB1v9GuZYxwOWM1MjZjLTKr6EeffXNDX9kzYZyr5KsyfSB1v9GuZYxjMiIsImMiOjh9" allowFullScreen="true" title="Power BI Dashboard"></iframe>
+        </div>
+        <div class="card">
+            <h2>Tableau Dashboard</h2>
+            <iframe src="https://public.tableau.com/app/profile/lucyswan/viz/CyberthreatAdvisary/Sheet1" width="100%" height="400" title="Tableau Dashboard"></iframe>
+        </div>
+    </div>
+
+    <!-- Real-Time Threat Data Section -->
+    <div class="dashboard-section real-time-section">
+        <h2>Real-Time Threat Data</h2>
+        <table id="threatTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Severity</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be populated here -->
+            </tbody>
+        </table>
+    </div>
+    
+    <script>
+        // Function to fetch threat data (with optional date filters) and update both the table and the chart.
+        function fetchThreats(){
+            // Get filter values if any
+            var startDate = $('#start_date').val();
+            var endDate = $('#end_date').val();
+            
+            // Build the query string for the API endpoint.
+            var queryString = '';
+            if(startDate || endDate) {
+                queryString = '?';
+                if(startDate) { queryString += 'start_date=' + startDate; }
+                if(endDate) { queryString += (startDate ? '&' : '') + 'end_date=' + endDate; }
+            }
+            
+            $.getJSON('/api/threats' + queryString, function(data){
+                // Update table with threat data.
+                var tbody = '';
+                data.forEach(function(threat){
+                    tbody += '<tr>';
+                    tbody += '<td>' + threat.id + '</td>';
+                    tbody += '<td>' + threat.name + '</td>';
+                    tbody += '<td>' + threat.severity + '</td>';
+                    tbody += '<td>' + threat.timestamp + '</td>';
+                    tbody += '</tr>';
+                });
+                $('#threatTable tbody').html(tbody);
+                
+                // Count threats by severity for chart data.
+                var severityCounts = { 'Low': 0, 'Medium': 0, 'High': 0, 'Critical': 0 };
+                data.forEach(function(threat){
+                    severityCounts[threat.severity]++;
+                });
+                
+                // Render the chart.
+                var ctx = document.getElementById('threatChart').getContext('2d');
+                // Destroy previous chart instance if it exists.
+                if(window.threatChartInstance) {
+                    window.threatChartInstance.destroy();
+                }
+                window.threatChartInstance = new Chart(ctx, {
+                    type: 'line', // Changed to line chart
+                    data: {
+                        labels: Object.keys(severityCounts),
+                        datasets: [{
+                            label: '# of Threats',
+                            data: Object.values(severityCounts),
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4 // Smooth curves
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#e0e0e0' // Adjust legend text color for dark theme
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        }
+        
+        // Initial fetch of threat data.
+        fetchThreats();
+        // Update data every 30 seconds.
+        setInterval(fetchThreats, 30000);
+        
+        // Bind the filter button to re-fetch data with filters.
+        $('#applyFilters').click(function(){
+            fetchThreats();
+        });
+
+        // Apply saved theme on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('themeSwitch').checked = true;
+            }
+        });
+
+        // Theme toggle functionality with persistence
+        const themeSwitch = document.getElementById('themeSwitch');
+        themeSwitch.addEventListener('change', function () {
+            if (themeSwitch.checked) {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
+            }
+        });
+    </script>
+</body>
+</html>
