@@ -37,7 +37,7 @@ CTI Dashboard/
 ### 1️⃣ Clone the Repository
 ```bash
 git clone https://github.com/your-repo/CTI-Dashboard.git
-cd cyber-threat-dashboard
+cd CTI-Dashboard
 ```
 
 ### 2️⃣ Install Dependencies
