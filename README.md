@@ -26,6 +26,8 @@ A real-time web-based dashboard for visualizing cybersecurity threats using Flas
 CTI Dashboard/
 ├── templates/
 │   └── dashboard.html      # Main frontend UI
+├── .gitignore
+├── LICENSE
 ├── app.py              # Main Flask application
 └── README.md           # Project documentation
 ```
